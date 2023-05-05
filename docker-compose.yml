@@ -1,0 +1,62 @@
+version: '3'
+services:
+ web:
+   image: wordpress:4.6
+   depends_on:
+    - mysql
+   environment:
+    - WORDPRESS_DB_HOST=mysql:3306
+    - WORDPRESS_DB_USER=root
+    - WORDPRESS_DB_PASSWORD=root
+    - WORDPRESS_DB_NAME=wordpress
+   ports:
+    - 8080:80
+   volumes:
+    - ./plugins/:/var/www/html/wp-content/plugins/
+   networks:
+     vulnetwork:
+       ipv4_address: 10.7.0.5
+   container_name: wordpress
+ mysql:
+   image: mysql:5
+   environment:
+    - MYSQL_ROOT_PASSWORD=root
+   networks:
+     vulnetwork:
+       ipv4_address: 10.7.0.4
+   container_name: mysql
+ metasploit:
+   image: metasploitframework/metasploit-framework:latest
+   environment:
+    DATABASE_URL: postgres://postgres@db:5432/msf?pool=200&timeout=5
+   links:
+    - db
+   ports:
+    - 4444:4444
+   tty: true
+   stdin_open: true
+   networks:
+     vulnetwork:
+       ipv4_address: 10.7.0.3
+   container_name: metasploit
+ db:
+   image: postgres:10-alpine
+   volumes:
+    - pg_data:/var/lib/postgresql/data
+   environment:
+    POSTGRES_HOST_AUTH_METHOD: trust
+   networks:
+     vulnetwork:
+       ipv4_address: 10.7.0.2
+   container_name: db
+
+volumes:
+ pg_data:
+   driver: local
+networks:
+  vulnetwork:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.7.0.0/16
+          gateway: 10.7.0.1
